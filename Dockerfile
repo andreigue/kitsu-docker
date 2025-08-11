@@ -16,6 +16,7 @@ RUN mkdir -p /opt/zou/zou /var/log/zou /opt/zou/previews && \
     apt-get install --no-install-recommends -q -y \
     bzip2 \
     build-essential \
+    dos2unix \
     ffmpeg \
     git \
     gcc \
@@ -49,27 +50,32 @@ RUN service postgresql start && \
 USER root
 
 # Wait for the startup or shutdown to complete
-COPY --chown=postgres:postgres --chmod=0644 ./docker/pg_ctl.conf /etc/postgresql/${PG_VERSION}/main/pg_ctl.conf
-COPY --chown=postgres:postgres --chmod=0644 ./docker/postgresql-log.conf /etc/postgresql/${PG_VERSION}/main/conf.d/postgresql-log.conf
+COPY --chown=postgres:postgres --chmod=0644 ./kitsu-docker/docker/pg_ctl.conf /etc/postgresql/${PG_VERSION}/main/pg_ctl.conf
+COPY --chown=postgres:postgres --chmod=0644 ./kitsu-docker/docker/postgresql-log.conf /etc/postgresql/${PG_VERSION}/main/conf.d/postgresql-log.conf
 # hadolint ignore=DL3013
 RUN sed -i "s/bind .*/bind 127.0.0.1/g" /etc/redis/redis.conf && \
     git config --global --add advice.detachedHead false && \
-    wget -q -O /tmp/kitsu.tgz https://github.com/cgwire/kitsu/releases/download/v${KITSU_VERSION}/kitsu-${KITSU_VERSION}.tgz && \
-    mkdir -p /opt/zou/kitsu && tar xvzf /tmp/kitsu.tgz -C /opt/zou/kitsu && rm /tmp/kitsu.tgz && \
+    mkdir -p /opt/zou/kitsu && \
     python3 -m venv /opt/zou/env && \
     /opt/zou/env/bin/pip install --no-cache-dir --upgrade pip setuptools wheel && \
     /opt/zou/env/bin/pip install --no-cache-dir zou==${ZOU_VERSION} && \
     pip install --no-cache-dir sendria && \
     rm /etc/nginx/sites-enabled/default
 
+# Copy local kitsu frontend
+COPY kitsu /opt/zou/kitsu
+
 WORKDIR /opt/zou
 
-COPY ./docker/gunicorn.py /etc/zou/gunicorn.py
-COPY ./docker/gunicorn-events.py /etc/zou/gunicorn-events.py
-COPY ./docker/nginx.conf /etc/nginx/sites-enabled/zou
-COPY docker/supervisord.conf /etc/supervisord.conf
-COPY --chmod=0755 ./docker/init_zou.sh /opt/zou/
-COPY --chmod=0755 ./docker/start_zou.sh /opt/zou/
+COPY ./kitsu-docker/docker/gunicorn.py /etc/zou/gunicorn.py
+COPY ./kitsu-docker/docker/gunicorn-events.py /etc/zou/gunicorn-events.py
+COPY ./kitsu-docker/docker/nginx.conf /etc/nginx/sites-enabled/zou
+COPY kitsu-docker/docker/supervisord.conf /etc/supervisord.conf
+COPY --chmod=0755 ./kitsu-docker/docker/init_zou.sh /opt/zou/
+COPY --chmod=0755 ./kitsu-docker/docker/start_zou.sh /opt/zou/
+
+# Convert Windows line endings to Unix
+RUN dos2unix /opt/zou/init_zou.sh /opt/zou/start_zou.sh
 
 RUN echo Initialising Zou... && \
     /opt/zou/init_zou.sh

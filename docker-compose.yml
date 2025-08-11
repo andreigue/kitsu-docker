@@ -1,6 +1,8 @@
 services:
   cgwire:
-    image: cgwire/cgwire:latest
+    build:
+      context: ..
+      dockerfile: kitsu-docker/Dockerfile
     container_name: kitsu
     init: true
     tty: true
