@@ -4,9 +4,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PG_VERSION=14
 ENV DB_USERNAME=root DB_HOST=
 # https://github.com/cgwire/zou/tags
-ARG ZOU_VERSION=v0.20.60
+ARG ZOU_VERSION=0.20.72
 # https://github.com/cgwire/kitsu/tags
-ARG KITSU_VERSION=0.20.75
+ARG KITSU_VERSION=0.20.86
 
 USER root
 
