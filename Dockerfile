@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PG_VERSION=14
 ENV DB_USERNAME=root DB_HOST=
 # https://github.com/cgwire/zou/tags
-ARG ZOU_VERSION=0.20.60
+ARG ZOU_VERSION=v0.20.60
 # https://github.com/cgwire/kitsu/tags
 ARG KITSU_VERSION=0.20.75
 
@@ -58,8 +58,13 @@ RUN sed -i "s/bind .*/bind 127.0.0.1/g" /etc/redis/redis.conf && \
     mkdir -p /opt/zou/kitsu && \
     python3 -m venv /opt/zou/env && \
     /opt/zou/env/bin/pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    /opt/zou/env/bin/pip install --no-cache-dir zou==${ZOU_VERSION} && \
-    pip install --no-cache-dir sendria && \
+    # Clone Zou source code instead of installing package
+    cd /opt/zou && \
+    git clone --branch ${ZOU_VERSION} https://github.com/cgwire/zou.git zou-src && \
+    cd zou-src && \
+    /opt/zou/env/bin/pip install --no-cache-dir -e . && \
+    cd .. && \
+    /opt/zou/env/bin/pip install --no-cache-dir sendria && \
     rm /etc/nginx/sites-enabled/default
 
 # Copy local kitsu frontend
@@ -73,12 +78,16 @@ COPY ./kitsu-docker/docker/nginx.conf /etc/nginx/sites-enabled/zou
 COPY kitsu-docker/docker/supervisord.conf /etc/supervisord.conf
 COPY --chmod=0755 ./kitsu-docker/docker/init_zou.sh /opt/zou/
 COPY --chmod=0755 ./kitsu-docker/docker/start_zou.sh /opt/zou/
+COPY --chmod=0755 ./kitsu-docker/docker/patch_zou.py /opt/zou/docker/
 
 # Convert Windows line endings to Unix
 RUN dos2unix /opt/zou/init_zou.sh /opt/zou/start_zou.sh
 
 RUN echo Initialising Zou... && \
     /opt/zou/init_zou.sh
+
+# Patch the Person model with Telegram fields (after Zou is initialized)
+RUN /opt/zou/env/bin/python /opt/zou/docker/patch_zou.py
 
 EXPOSE 80
 EXPOSE 1080
