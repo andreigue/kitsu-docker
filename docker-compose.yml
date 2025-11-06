@@ -8,17 +8,23 @@ services:
     tty: true
     stdin_open: true
     ports:
-      - 8012:80  # you can change 8012 if needed
-      - 1080:1080
+      - "8012:80"
+      - "1080:1080"
     volumes:
-      - zou-storage:/var/lib/postgresql
-      - zou-storage:/opt/zou/previews
+      - zou-db:/var/lib/postgresql
+      - zou-previews:/opt/zou/previews
+    restart: unless-stopped  # survives VM reboots
 
 volumes:
-  zou-storage:
+  zou-db:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: './zou-storage'
-
+      device: './zou-storage/db'
+  zou-previews:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: './zou-storage/previews'
