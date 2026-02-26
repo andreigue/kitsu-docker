@@ -63,7 +63,6 @@ RUN sed -i "s/bind .*/bind 127.0.0.1/g" /etc/redis/redis.conf && \
     git clone --branch ${ZOU_VERSION} https://github.com/cgwire/zou.git zou-src && \
     cd zou-src && \
     /opt/zou/env/bin/pip install --no-cache-dir --no-build-isolation -e . && \
-
     cd .. && \
     /opt/zou/env/bin/pip install --no-cache-dir sendria && \
     rm /etc/nginx/sites-enabled/default
@@ -79,6 +78,7 @@ COPY ./kitsu-docker/docker/nginx.conf /etc/nginx/sites-enabled/zou
 COPY kitsu-docker/docker/supervisord.conf /etc/supervisord.conf
 COPY --chmod=0755 ./kitsu-docker/docker/init_zou.sh /opt/zou/
 COPY --chmod=0755 ./kitsu-docker/docker/start_zou.sh /opt/zou/
+# COPY --chmod=0755 ./kitsu-docker/docker/patch_zou.py /opt/zou/docker/  ## Uncomment this for telegram code
 
 # Convert Windows line endings to Unix
 RUN dos2unix /opt/zou/init_zou.sh /opt/zou/start_zou.sh
@@ -87,7 +87,7 @@ RUN echo Initialising Zou... && \
     /opt/zou/init_zou.sh
 
 # Patch the Person model with Telegram fields (after Zou is initialized)
-RUN /opt/zou/env/bin/python /opt/zou/docker/patch_zou.py
+# RUN /opt/zou/env/bin/python /opt/zou/docker/patch_zou.py  ## Uncomment this for telegram code
 
 EXPOSE 80
 EXPOSE 1080
